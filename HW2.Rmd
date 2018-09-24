@@ -1,7 +1,7 @@
 ---
 title: "HW2 STA521 Fall18"
-author: '[Your Name Here, netid and github username here]'
-date: "Due September 23, 2018 5pm"
+author: "Harshit Sahay, netID:hs239, github username: harshitsahay" 
+date: "Due September 24, 2018 9pm"
 output:
   pdf_document: default
   html_document:
@@ -15,16 +15,15 @@ Readings: Chapters 3-4 in Weisberg Applied Linear Regression
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(knitr)
+library(GGally)
+library(ggplot2)
+library(ggrepel)
 ```
-
-This exercise involves the UN data set from `alr3` package. Install `alr3` and the `car` packages and load the data to answer the following questions adding your code in the code chunks.  Please add appropriate code to the chunks to suppress messages and warnings as needed once you are sure the code is working properly and remove instructions if no longer needed. Figures should have informative captions. Please switch the output to pdf for your final version to upload to Sakai. **Remove these instructions for final submission**
-
-
 ## Exploratory Data Analysis
 
-0.  Preliminary read in the data.  After testing, modify the code chunk so that output, messages and warnings are suppressed.  *Exclude text from final*
-
-```{r data}
+```{r data, include=FALSE}
 library(alr3)
 data(UN3, package="alr3")
 help(UN3) 
@@ -34,14 +33,22 @@ library(car)
 
 1. Create a summary of the data.  How many variables have missing data?  Which are quantitative and which are qualtitative?
 
-```{r}
-
+```{r, include=FALSE}
+summary(UN3)
+colnames(UN3)[colSums(is.na(UN3)) > 0]
 ```
+All variables are quantitative.
+
+6 of the 7 variables (ModernC, Change, PPgdp, Frate, Pop, Fertility) have missing data. The only variable that doesn't have missing data is Purban.
+
 
 2. What is the mean and standard deviation of each quantitative predictor?  Provide in a nicely formatted table.
 
 ```{r}
+data_mean= round(sapply(UN3,mean,na.rm=TRUE),3)
+data_sd= round(sapply(UN3,sd,na.rm=TRUE),3)
 
+kable(cbind(data_mean,data_sd), col.names =c('Mean','Std. Dev'))
 ```
 
 
@@ -49,23 +56,73 @@ library(car)
 highlighting the relationships among the predictors. Comment
 on your findings regarding trying to predict `ModernC` from the other variables.  Are there potential outliers, nonlinear relationships or transformations that appear to be needed based on your graphical EDA?
 
-```{r}
-
+```{r,echo=FALSE,message=FALSE}
+gp=ggpairs(na.omit(UN3),title="Pairwise Comparisons")
+print(gp, progress= FALSE)
 ```
+The Population plots suggests the presence of two outliers. As far as linearity is concerned, two variables seem useful- Fertility, with a negative relationship, and PUrban, with a positive relationship. There does seem to be some predictive power associated with PPgdp too, but this is not a linear relationship, and might need to be transformed. We can look at some more plots in closer detail.
+
+\newpage
+```{r}
+ModC_fer=ggplot(na.omit(UN3),aes(x=Fertility,y=ModernC))+geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Fertility")
+```
+This is the negative, somewhat linear relationship we saw earlier. A similar relationship can be seen for Change, with slightly less correlation (and hence predictive value). Similarly, for Purban, we see the positive linear relationship. All of these aren't exact, as data rarely is, but are good places to start. Out of the three of these, it it clear that Fertility is the best predictor, as could also be seen from the correlation value in the ggpairs plot.
+\newpage
+```{r}
+ModC_Change=ggplot(na.omit(UN3),aes(y=ModernC,x=Change)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Change")
+```
+\newpage
+```{r}
+ModC_Purbanggplot(na.omit(UN3),aes(y=ModernC,x=Purban)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Urban Population")
+```
+ \newpage
+Going back to the ggpairs plot suggests that Frate and Pop may not be useful predictors due to their low correlations with ModernC. However, PPgdp has correlations comparable to Change and Purban, but this is not clear from the plot, since the relationship isn't linear. A transformation would help. 
+
+```{r}
+ModC_PPgdp=ggplot(na.omit(UN3),aes(y=ModernC,x=PPgdp)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs PPgdp")
+```
+\newpage
+We can see that a log transform better showcases the linear trend that can be modelled.
+```{r}
+UN3_mod=mutate(UN3,log_PPgdp=log(PPgdp))
+ModC_logPPgdp=ggplot(data=na.omit(UN3_mod),aes(x=log_PPgdp,y=ModernC))+geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs log(PPgdp)")
+```
+
+
+The ModernC vs Pop graph suggests that India and China are outliers.
+```{r}
+UN3_test=UN3
+UN3_test$country=row.names(UN3)
+ModC_Pop=ggplot(na.omit(UN3_test),aes(y=ModernC,x=Pop)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Pop")+geom_text_repel(data=subset(UN3_test,Pop>1000000),aes(label=country))
+```
+ 
+
 
 ## Model Fitting
 
 4.  Use the `lm()` function to perform a multiple linear regression with `ModernC` as the response and all other variables as the predictors, using the formula `ModernC ~ .`, where the `.` includes all remaining variables in the dataframe.  Create  diagnostic residual plot from the linear model object and comment on results regarding assumptions.  How many observations are used in your model fitting?
 
-```{r}
+125 observations are used in the fitted model. 
 
+The Residuals-Fitted and Scale-Location plots suggest that the linearity assumptions isn't completely valid. The slight bulge in both plots suggests this. The Normal-QQ plot suggests that normality isn't valid here, the data appears to be left skewed. The final plot suggests that India and China have high leverage, but are still within the Cook's distance thresholds. At the threshold of 0.5, these points are not influential, but they still have a significantly higher leverage compared to other points.
+```{r}
+model=lm(ModernC~.,data=na.omit(UN3))
+par(mfrow=c(2,2))
+plot(model)
 ```
 
 5. Examine added variable plots `car::avPlot` or `car::avPlots`  for your model above. Are there any plots that suggest that transformations are needed for any of the terms in the model? Describe. Is it likely that any of the localities are influential for any of the terms?  Which localities?  Which terms?  
 
 ```{r}
-
+avPlots(model)
 ```
+We discussed earlier, and it's evident now that PPgdp does have predictive power. The scale of the axis on the residuals for it suggests that we might wanna try a log transformation. We can also see that Pop has predictive power, however, the scale of residuals, and also the outliers suggest that these might need transformations too. A log transformation might reduce the effect of these outliers (India and China).
+
+We also see that Purban and Frate have little predictive value after the other variables have been accounted for. We might not need these in the model.
+
+Localities that are influential are China and India for Pop.
+Cook Island and Kuwait for Change, Thailand for Fertility.
+
 
 6.  Using the Box-Tidwell  `car::boxTidwell`, `car::powerTransform` or graphical methods find appropriate transformations of the predictor variables to be used as predictors in the linear model.  If any predictors are negative, you may need to transform so that they are non-negative.  Describe your method and  the resulting transformations.
 
