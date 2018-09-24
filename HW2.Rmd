@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(knitr)
 library(GGally)
+library(grid)
 library(ggplot2)
 library(ggrepel)
 ```
@@ -62,7 +63,6 @@ print(gp, progress= FALSE)
 ```
 The Population plots suggests the presence of two outliers. As far as linearity is concerned, two variables seem useful- Fertility, with a negative relationship, and PUrban, with a positive relationship. There does seem to be some predictive power associated with PPgdp too, but this is not a linear relationship, and might need to be transformed. We can look at some more plots in closer detail.
 
-\newpage
 ```{r}
 ModC_fer=ggplot(na.omit(UN3),aes(x=Fertility,y=ModernC))+geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Fertility")
 ```
@@ -71,17 +71,14 @@ This is the negative, somewhat linear relationship we saw earlier. A similar rel
 ```{r}
 ModC_Change=ggplot(na.omit(UN3),aes(y=ModernC,x=Change)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Change")
 ```
-\newpage
 ```{r}
-ModC_Purbanggplot(na.omit(UN3),aes(y=ModernC,x=Purban)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Urban Population")
+ModC_Purban=ggplot(na.omit(UN3),aes(y=ModernC,x=Purban)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Urban Population")
 ```
- \newpage
 Going back to the ggpairs plot suggests that Frate and Pop may not be useful predictors due to their low correlations with ModernC. However, PPgdp has correlations comparable to Change and Purban, but this is not clear from the plot, since the relationship isn't linear. A transformation would help. 
 
 ```{r}
 ModC_PPgdp=ggplot(na.omit(UN3),aes(y=ModernC,x=PPgdp)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs PPgdp")
 ```
-\newpage
 We can see that a log transform better showcases the linear trend that can be modelled.
 ```{r}
 UN3_mod=mutate(UN3,log_PPgdp=log(PPgdp))
@@ -96,6 +93,10 @@ UN3_test$country=row.names(UN3)
 ModC_Pop=ggplot(na.omit(UN3_test),aes(y=ModernC,x=Pop)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Pop")+geom_text_repel(data=subset(UN3_test,Pop>1000000),aes(label=country))
 ```
  
+```{r}
+library(gridExtra)
+grid.arrange(ModC_fer,ModC_Change,ModC_PPgdp,ModC_Pop,ModC_Purban,nrow=2)
+```
 
 
 ## Model Fitting
