@@ -124,9 +124,6 @@ plot(model)
 
 5. Examine added variable plots `car::avPlot` or `car::avPlots`  for your model above. Are there any plots that suggest that transformations are needed for any of the terms in the model? Describe. Is it likely that any of the localities are influential for any of the terms?  Which localities?  Which terms?  
 
-```{r}
-avPlots(model)
-```
 We discussed earlier, and it's evident now that PPgdp does have predictive power. The scale of the axis on the residuals for it suggests that we might wanna try a log transformation. We can also see that Pop has predictive power, however, the scale of residuals, and also the outliers suggest that these might need transformations too. A log transformation might reduce the effect of these outliers (India and China).
 
 We also see that Purban and Frate have little predictive value after the other variables have been accounted for. We might not need these in the model.
@@ -134,6 +131,9 @@ We also see that Purban and Frate have little predictive value after the other v
 Localities that are influential are China and India for Pop.
 Cook Island and Kuwait for Change, Thailand for Fertility.
 
+```{r}
+avPlots(model)
+```
 
 6.  Using the Box-Tidwell  `car::boxTidwell`, `car::powerTransform` or graphical methods find appropriate transformations of the predictor variables to be used as predictors in the linear model.  If any predictors are negative, you may need to transform so that they are non-negative.  Describe your method and  the resulting transformations.
 
