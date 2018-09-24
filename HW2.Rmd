@@ -19,6 +19,7 @@ library(dplyr)
 library(knitr)
 library(GGally)
 library(grid)
+library(gridExtra)
 library(ggplot2)
 library(ggrepel)
 ```
@@ -57,7 +58,7 @@ kable(cbind(data_mean,data_sd), col.names =c('Mean','Std. Dev'))
 highlighting the relationships among the predictors. Comment
 on your findings regarding trying to predict `ModernC` from the other variables.  Are there potential outliers, nonlinear relationships or transformations that appear to be needed based on your graphical EDA?
 
-```{r,echo=FALSE,message=FALSE}
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 gp=ggpairs(na.omit(UN3),title="Pairwise Comparisons")
 print(gp, progress= FALSE)
 ```
@@ -92,9 +93,16 @@ UN3_test=UN3
 UN3_test$country=row.names(UN3)
 ModC_Pop=ggplot(na.omit(UN3_test),aes(y=ModernC,x=Pop)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Pop")+geom_text_repel(data=subset(UN3_test,Pop>1000000),aes(label=country))
 ```
+```{r}
+UN3_mod1=mutate(UN3,log_pop=log(Pop))
+ModC_logPop=ggplot(data=na.omit(UN3_mod1),aes(x=log_pop,y=ModernC))+geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs log(Pop)")
+```
+```{r}
+grid.arrange(ModC_Pop,ModC_logPop,ModC_PPgdp,ModC_logPPgdp,nrow=2)
+```
+
  
 ```{r}
-library(gridExtra)
 grid.arrange(ModC_fer,ModC_Change,ModC_PPgdp,ModC_Pop,ModC_Purban,nrow=2)
 ```
 
