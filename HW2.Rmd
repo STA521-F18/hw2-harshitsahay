@@ -126,7 +126,7 @@ plot(model)
 
 We discussed earlier, and it's evident now that PPgdp does have predictive power. The scale of the axis on the residuals for it suggests that we might wanna try a log transformation. We can also see that Pop has predictive power, however, the scale of residuals, and also the outliers suggest that these might need transformations too. A log transformation might reduce the effect of these outliers (India and China).
 
-We also see that Purban and Frate have little predictive value after the other variables have been accounted for. We might not need these in the model.
+We also see that Purban and Frate have little predictive value after the other variables have been accounted for. 
 
 Localities that are influential are China and India for Pop.
 Cook Island and Kuwait for Change, Thailand for Fertility.
@@ -134,13 +134,43 @@ Cook Island and Kuwait for Change, Thailand for Fertility.
 ```{r}
 avPlots(model)
 ```
+We'll also look at the added variable plots after we remove India and China. This is to check if the added variable plot for Pop still looks similar after the outliers are removed. We see that there is still a relationship. The log transform will probably be a good idea to retain, and not something that's just an artefact due to these two data points. 
+
+```{r}
+UN3_outliers=subset(UN3,Pop<1000000)
+model2=lm(ModernC~.,UN3_outliers)
+avPlots(model2)
+```
+
+This plot with transformed variables again suggests that Purban doesn't have a lot of predictive power. Frate seems to have increased slightly in this respect, so we'll keep this in mind and keep it in the model for now.
+
 
 6.  Using the Box-Tidwell  `car::boxTidwell`, `car::powerTransform` or graphical methods find appropriate transformations of the predictor variables to be used as predictors in the linear model.  If any predictors are negative, you may need to transform so that they are non-negative.  Describe your method and  the resulting transformations.
 
+Note that graphical methods for appropriate transformations have already been provided in Q3. Reproducing those plots here, we basically see that log transforms for Pop and Ppgdp might be useful. 
 
 ```{r}
-
+grid.arrange(ModC_Pop,ModC_logPop,ModC_PPgdp,ModC_logPPgdp,nrow=2)
 ```
+
+We run boxTidwell tests for Pop and PPgdp, since these are the ones that we want to transform. We can also try dropping Purban since it doesn't have a lot of predictive value. To conform that we don't need this, we can use Anova later.
+
+Our second test is to keep log transforms for Pop and PPgdp, and check if any of the variables that we have assumed to be linear need to be transformed. The following code chunk tests that. For the second test, we'll need to transform Change to make it positive. The best way to do this is probably to add a constant positive value. Since the lowest value is -1.10, adding say 2, is sufficient.
+
+```{r}
+boxTidwell(ModernC~Pop+PPgdp,~Fertility+Change+Frate, data=na.omit(UN3))
+
+UN3_boxTid=mutate(UN3,Change=Change+2)
+boxTidwell(ModernC~Fertility+Change+Frate,~log(Pop)+log(PPgdp),data=na.omit(UN3_boxTid))
+```
+
+All other transformations have no significance associated with them. So we'll keep the log transforms for Pop and PPgdp based on our earlier assessment. We'll also not transform Change, even though it's significant. This is because the exponent in question is too high to make sense, and might be due to the smaller dynamic range associated with this variable. Let's check anova like we decided to before. We can essentially see if any term we add is useful, starting with Fertility, which had the highest correlation.
+
+```{r}
+anova(lm(ModernC~Fertility+Change+log(PPgdp)+log(Pop)+Frate+Purban,data=na.omit(UN3)))
+```
+As we said earlier, Purban doesn't add much to the model, and anova verifies that it doesn't have a significant reduction in RSS. So we'll drop it from the predictors, and use the log transforms for Pop and PPgdp.
+
 
 7. Given the selected transformations of the predictors, select a transformation of the response using `MASS::boxcox` or `car::boxCox` and justify. 
 
