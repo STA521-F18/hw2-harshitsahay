@@ -67,27 +67,22 @@ The Population plots suggests the presence of two outliers. As far as linearity 
 ```{r}
 ModC_fer=ggplot(na.omit(UN3),aes(x=Fertility,y=ModernC))+geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Fertility")
 ```
-This is the negative, somewhat linear relationship we saw earlier. A similar relationship can be seen for Change, with slightly less correlation (and hence predictive value). Similarly, for Purban, we see the positive linear relationship. All of these aren't exact, as data rarely is, but are good places to start. Out of the three of these, it it clear that Fertility is the best predictor, as could also be seen from the correlation value in the ggpairs plot.
-\newpage
 ```{r}
 ModC_Change=ggplot(na.omit(UN3),aes(y=ModernC,x=Change)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Change")
 ```
 ```{r}
 ModC_Purban=ggplot(na.omit(UN3),aes(y=ModernC,x=Purban)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs Urban Population")
 ```
-Going back to the ggpairs plot suggests that Frate and Pop may not be useful predictors due to their low correlations with ModernC. However, PPgdp has correlations comparable to Change and Purban, but this is not clear from the plot, since the relationship isn't linear. A transformation would help. 
 
 ```{r}
 ModC_PPgdp=ggplot(na.omit(UN3),aes(y=ModernC,x=PPgdp)) + geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs PPgdp")
 ```
-We can see that a log transform better showcases the linear trend that can be modelled.
 ```{r}
 UN3_mod=mutate(UN3,log_PPgdp=log(PPgdp))
 ModC_logPPgdp=ggplot(data=na.omit(UN3_mod),aes(x=log_PPgdp,y=ModernC))+geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs log(PPgdp)")
 ```
 
 
-The ModernC vs Pop graph suggests that India and China are outliers.
 ```{r}
 UN3_test=UN3
 UN3_test$country=row.names(UN3)
@@ -97,15 +92,22 @@ ModC_Pop=ggplot(na.omit(UN3_test),aes(y=ModernC,x=Pop)) + geom_point()+theme(plo
 UN3_mod1=mutate(UN3,log_pop=log(Pop))
 ModC_logPop=ggplot(data=na.omit(UN3_mod1),aes(x=log_pop,y=ModernC))+geom_point()+theme(plot.title = element_text(hjust = 0.5))+ggtitle("ModernC vs log(Pop)")
 ```
-```{r}
-grid.arrange(ModC_Pop,ModC_logPop,ModC_PPgdp,ModC_logPPgdp,nrow=2)
-```
 
  
 ```{r}
 grid.arrange(ModC_fer,ModC_Change,ModC_PPgdp,ModC_Pop,ModC_Purban,nrow=2)
 ```
 
+There is a negative, somewhat linear relationship we saw earlier for Fertility. A similar relationship can be seen for Change, with slightly less correlation (and hence predictive value). Similarly, for Purban, we see the positive linear relationship. All of these aren't exact, as data rarely is, but are good places to start. Out of the three of these, it it clear that Fertility is the best predictor, as could also be seen from the correlation value in the ggpairs plot.
+
+Going back to the ggpairs plot suggests that Frate and Pop may not be useful predictors due to their low correlations with ModernC. However, PPgdp has correlations comparable to Change and Purban, but this is not clear from the plot, since the relationship isn't linear. A transformation would help. 
+
+The ModernC vs Pop graph suggests that India and China are outliers.
+\newpage
+```{r}
+grid.arrange(ModC_Pop,ModC_logPop,ModC_PPgdp,ModC_logPPgdp,nrow=2)
+```
+We can also see that the log transforms for Pop and PPgdp represent the relationship better, as far as modelling with a linear model is concerned.
 
 ## Model Fitting
 
