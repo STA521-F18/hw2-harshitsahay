@@ -176,41 +176,71 @@ As we said earlier, Purban doesn't add much to the model, and anova verifies tha
 
 
 ```{r}
+bcx=boxCox(lm(ModernC~Fertility+Change+log(PPgdp)+log(Pop)+Frate,data=na.omit(UN3)),plotit=TRUE)
+```
+We can print the 95% confidence interval as:
+```{r}
+range(bcx$x[bcx$y > max(bcx$y)-qchisq(0.95,1)/2])
+```
+No integer liesi in the confidence interval but 1 is pretty close. Examination of the graph also confirms that there is no dip at 1, and that choosing it should be okay. Rather than go with a value in the confidence interval, for the purposes of interpretability, we'll take lambda to be 1. That means, we are using ModernC without any transformations as the response.
+
+
+8.  Fit the regression using the transformed variables.  Provide residual plots and added variables plots and comment.  If you feel that you need additional transformations of either the response or predictors, repeat any steps until you feel satisfied.
+
+```{r}
+final_model=lm(ModernC~Fertility+Change+log(Pop)+log(PPgdp)+Frate,data=na.omit(UN3))
+par(mfrow=c(2,2))
+plot(final_model)
+avPlots(final_model)
 
 ```
 
-8.  Fit the regression using the transformed variables.  Provide residual plots and added variables plots and comment.  If you feel that you need additional transformations of either the response or predictors, repeat any steps until you feel satisfied.
+The response isn't completely linear. This is expected based on what we've seen, but for the most parts the Residual vs Fitted and Scale vs Location plots are relatively okay. The QQ plot suggests a slightly lighter tail, but is mostly okay. 
+
+While Kuwait and Cook Islands (an outlier in some other plots) have high leverage values, they don't have a significant Cook's distance, and are not influential.
 
 9. Start by finding the best transformation of the response and then find transformations of the predictors.  Do you end up with a different model than in 8?
 
 
 ```{r}
-
+boxCox(lm(ModernC~.,data=na.omit(UN3)),plotit = TRUE)
 ```
+Not transforming the predictors first also has similar effects, 1 is in the confidence interval this time. So we will end up with the same model, because after using lambda=1 for ModernC we'll perform similar analysis as before, dropping Purban and using log transforms for Pop and PPgdp.
+
 
 10.  Are there any outliers or influential points in the data?  Explain.  If so, refit the model after removing any outliers and comment on residual plots.
 
-
-```{r}
-
-```
+There aren't any influential points since all points are within Cook's Distance. We can assume that they aren't affecting the regression slop much.
 
 ## Summary of Results
 
 11. For your final model, provide summaries of coefficients with 95% confidence intervals in a nice table with interpretations of each coefficient.  These should be in terms of the original units! 
 
 
+
 ```{r}
 
+kable(cbind(round(final_model$coefficients,3),round(confint(final_model),3)),col.names=c("Coefficient","2.5%","97.5%"))
 ```
 
+
+Interpretation for these is as follows. Holding all other variables constant:
+
+1) Fertility: A nation where the expected fertility is higher by 1 child per female has a 9.2% decrease in the number of married women using a modern method of contraception.
+
+2) Change: For every 1% increase in the population growth rate, the use of modern contraception increases by 4.6%.
+
+3) Frate: For every 1% increase in the number of economically active females over 15, the access to contraception increases by 0.2%.
+
+4) PPgdp: We used a log transform, so a change of 1 unit for this variable is equal to 2.71 (the value of e) times the original value. This tells us that for every 10% increase in a nation's per capita GDP, the access to contraception rises by 0.46%.
+
+5) Pop: For every 10% increase in a nation's population, we see a 0.13% increase in access to contraception.
 
 12. Provide a paragraph summarizing your final model  and findings suitable for the US envoy to the UN after adjusting for outliers or influential points.   You should provide a justification for any case deletions in your final model
 
-
-```{r}
-
-```
+These findings suggest that access to modern contraception has a strong relationship with several predictors. Countries with higher access to modern contraception usually have lower fertility rates, provided all other factors are constant. Increase in GDP rates also affects access to these methods, albeit much less significantly. The model doesn't have any case deletions. The final model looks like this, and can be used accordingly for parameter estimates to shape policies in question: 
+It explains 62% of the variance. 
+$$ModernC= 4.102 - 9.278*Fertility + 4.698*Change+ 1.441*log(Pop)+4.859*log(PPgdp)+0.200*Frate$$
 
 
 ## Methodology
@@ -218,5 +248,28 @@ As we said earlier, Purban doesn't add much to the model, and anova verifies tha
     
 13. Prove that the intercept in the added variable scatter plot will always be zero.  _Hint:  use the fact that if $H$ is the projection matrix for $X$ which contains a column of ones, then $1_n^T (I - H) = 0$ or $(I - H) 1_n = 0$.  Use this to show that the sample mean of residuals will always be zero if there is an intercept._
 
+We can start with the following
+$$e_{(Y)}=\hat{\beta_{0}} + \hat{\beta_{1}}e_{(X_{i})}$$
+We also have $$e_{(Y)}= (I-H)Y$$ and $$ e_{(X_i)} = (I-H) X_i$$ 
+This gives us :
+$$(I-H) Y = \hat{\beta_{0}} + \hat{\beta_{1}}(I-H)X_i $$
+Note that for $Y=\hat{\beta_0} +\hat{\beta_1}X$, we have $\hat{\beta_1}=[X^TX]^{-1}X^TY$. Here $Y= (I-H) Y and X= (I-H) X_i$. Substituting this, \\
+$$(I-H) Y = \hat{\beta_{0}}I + [X_i^T (I-H)^T (I-H) X_I]^{-1} [(I-H)X_i]^{T} (I-H)Y (I-H) X_i $$
+Pre-multiplying by $X_i^T$:
+$$X_i^T(I-H)Y= X_i^T\hat{\beta_0} + X_i^T[X_i^T(I-H)X_i]^{-1}X_i^T(I-H)Y(I-H)X_i$$ \\
+Note that $X_i^T(I-H)Y$ is a scalar, so we can rearrange to give:
+$$X_i^T(I-H)Y=X_i^T\hat{\beta_0}+X_i^T(I-H)X_i[X_i^T(I-H)X_i]^{-1}X_i^T(I-H)Y$$
+$$X_i^T(I-H)Y=X_i^T\hat{\beta_0}+X_i^T(I-H)Y$$
+$$\sum_iX_i^{(1)^{n}}\hat{\beta_0}=0$$.
+Hence, slope of the intercept has to be zero, assuming $X_i$ is not zero.
 
 14. For multiple regression with more than 2 predictors, say a full model given by `Y ~ X1 + X2 + ... Xp`   we create the added variable plot for variable `j` by regressing `Y` on all of the `X`'s except `Xj` to form `e_Y` and then regressing `Xj` on all of the other X's to form `e_X`.  Confirm that the slope in a manually constructed added variable plot for one of the predictors  in Ex. 10 is the same as the estimate from your model. 
+
+We can take $X_j$ to be Fertility
+```{r}
+e_Y=residuals(lm(ModernC~Change+log(Pop)+log(PPgdp)+Frate,data=na.omit(UN3)))
+e_X=residuals(lm(Fertility~ Change+log(Pop)+log(PPgdp)+Frate,data=na.omit(UN3)))
+av_model=lm(e_Y~e_X)
+kable(cbind(coef(av_model)["e_X"],coef(final_model)["Fertility"]),col.names = c("e_X","Fertility"),row.names=FALSE)
+```
+
